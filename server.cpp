@@ -1,12 +1,8 @@
 #include"server.h"
 
-void thread_func(Server server, SOCKET client);
+void thread_func(Server& server, std::vector<pac> vec);
 
-struct sockpara {
-	SOCKET _listen;
-	SOCKET _client;
-	sockaddr_in _remote_addr;
-};
+
 
 Server::~Server() {
 	closesocket(slisten);
@@ -55,34 +51,38 @@ void Server::Process() {
 
 	std::cout << "waiting for connection... \n";
 
-		client = accept(slisten, (SOCKADDR*)&remote_addr, &addr_len);
-		if (client == INVALID_SOCKET) {
-			std::cout << "accpet error \n ";
-			return;
-		}
-		//accept a socket for connection	
-		std::cout << "connection established, ip is " << inet_ntoa(remote_addr.sin_addr) << '\n';
+	client = accept(slisten, (SOCKADDR*)&remote_addr, &addr_len);
+	if (client == INVALID_SOCKET) {
+		std::cout << "accpet error \n ";
+		return;
+	}
+	//accept a socket for connection
+	pac temp(client, remote_addr, sock_num);
+	sock_vec.push_back(temp);
 
-		std::thread th(thread_func, *this, client);
-		th.detach();
+	std::cout << "connection established, ip is " << inet_ntoa(remote_addr.sin_addr) << '\n';
+	sock_num++;
+	std::thread th(thread_func, *this, sock_vec);
+	th.detach();
 }
 
-void thread_func(Server server, SOCKET client) {
+void thread_func(Server& server, std::vector<pac> sock_pac) {
+
 	while (1) {
-		if (server.sub_process(client) == true) {
-			closesocket(client);
+		if (server.sub_process(sock_pac[server.sock_num]) == true) {
 			break;
 		}
 	}
+	closesocket(sock_pac[server.sock_num]._client);
 }
 
-bool Server::sub_process(SOCKET client) {
+bool Server::sub_process(pac& sock_pac) {
 	std::string result;
 	int times = 0;
 	std::vector<char> buffer(MAX_BUF_LENGTH);
 	int bit = 0;
 	do {
-		bit = recv(client, buffer.data(), buffer.size(), 0);
+		bit = recv(sock_pac._client, buffer.data(), buffer.size(), 0);
 		// aaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaa$ cant solve
 		if (bit == -1) {
 			std::cerr << "error, client exit!";
@@ -104,8 +104,8 @@ bool Server::sub_process(SOCKET client) {
 			if (result == "quit") {
 				return true;
 			}
-			std::cout << result << std::endl;
-			send(client, sendData, strlen(sendData), 0);
+			printf("[Socket %d ] > %s \n", sock_pac._num+1, result.c_str());
+			send(sock_pac._client, sendData, strlen(sendData), 0);
 			times = 0;
 			result.clear();
 
