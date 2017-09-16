@@ -2,14 +2,18 @@
 
 int main()
 {
-
 	Server server;
 	server.Init();
 	server.Bind();
-	server.Listen();
+
 	while (1) {
-		server.Process();
+		server.Listen();
+		if (server.Process() == false) {
+			break;
+		}		
 	}
 
+	closesocket(server.slisten);
+	WSACleanup();
 	return 0;
 }

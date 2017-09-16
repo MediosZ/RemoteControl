@@ -10,8 +10,7 @@
 #pragma warning(disable:4996)
 
 #define MAX_BUF_LENGTH 256
-#define sendData "hello client~ \n"
-
+#define sendData "connection established ... hello client~ \n"
 
 struct pac {
 	SOCKET _client;
@@ -30,16 +29,15 @@ class Server {
 public:
 	SOCKET slisten;
 	std::vector<pac> sock_vec;
-	std::vector<pac>::iterator cu_it;
 	int sock_num;
 
 	Server():sock_num(-1) {}
-	~Server();
+	~Server() {}
 
 	void Listen();
 	void Bind();
 	void Init();
-	void Process();
+	bool Process();
 	bool sub_process(pac& sock_pac);
 };
 
